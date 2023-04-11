@@ -1,0 +1,25 @@
+# Environement files
+.env
+.env.*
+.env.master
+secrets.txt
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+__pycache__
+*/__pycache__/*
+*/*/__pycache__/*
+*/*/*/__pycache__/*
+*/*/*/*/__pycache__/*
+
+
+# Files
+api.py
+test.py
+downloads.py
