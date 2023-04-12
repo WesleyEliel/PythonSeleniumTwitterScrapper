@@ -12,6 +12,8 @@ secrets.txt
 *.njsproj
 *.sln
 *.sw?
+Records
+/Records
 __pycache__
 */__pycache__/*
 */*/__pycache__/*

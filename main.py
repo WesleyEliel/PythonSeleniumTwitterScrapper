@@ -72,6 +72,16 @@ class TwitterScrapper():
             pass
         self.profile_bot = profile_bot
         return {'videos': self.videos, 'images': self.images, 'tweet_urls': self.tweet_urls}
+    
+    def save_scrapping_results(self):
+
+        data = {'videos': self.videos, 'images': self.images,
+                'tweet_urls': self.tweet_urls}
+
+        file = open(f"{self.save_dir}/data.json", 'w', encoding='utf-8')
+        json.dump(data, file, ensure_ascii=False)
+        file.close()
+
 
     def save_videos(self):
         video_urls = self.get_videos_urls()
@@ -92,16 +102,17 @@ class TwitterScrapper():
         return results
 
     def generate_save_dir(self):
-        return f'Records/{str(self.username).upper()}-{datetime.now().timestamp()}'
+        return f'Records/{str(self.username).upper()}/Twitter/{datetime.now().timestamp()}'
 
 
 if __name__ == '__main__':
     scrapper = TwitterScrapper(username=modelUsername)
 
-    scrapper_data = scrapper.process(limit=20)
+    scrapper_data = scrapper.process(limit=323)
 
     print(scrapper_data)
     print(scrapper.save_dir)
 
+    scrapper.save_scrapping_results()
     scrapper.save_images()
     scrapper.save_videos()
