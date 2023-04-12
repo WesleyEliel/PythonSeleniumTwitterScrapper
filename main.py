@@ -7,14 +7,16 @@ from dotenv import dotenv_values
 from twitter_scraper_selenium.profile import Profile as BaseProfile
 from twitter_scraper_selenium.driver_utils import Utilities
 
-from login import Login
-from utils import ImagesDownloader
+from utils import Login, ImagesDownloader, VideosDownloader, TwiterStatusesVideosUrlRetriever
 
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.WARNING)
+
 environ = dotenv_values('.env.master')
 
 masterUsername = environ['USERNAME']
 masterPassword = environ['PASSWORD']
+
+modelUsername = environ['MODEL']
 
 
 class Profile(BaseProfile):
@@ -28,21 +30,29 @@ class Profile(BaseProfile):
             Utilities.wait_until_completion(self.__driver)
             Utilities.wait_until_tweets_appear(self.__driver)
             self.__fetch_and_store_data()
-            self.__close_driver()
+            # self.__close_driver()
             data = dict(list(self.posts_data.items())
                         [0:int(self.tweets_count)])
             return data
         except Exception as ex:
             self.__close_driver()
-            logger.exception(
+            logging.exception(
                 "Error at method scrap : {} ".format(ex))
+        
+    def get_driver(self):
+        return self.__driver
+    
+    def close_driver(self):
+        return self.__close_driver()
 
 
 class TwitterScrapper():
     def __init__(self, username: str) -> None:
+        self.profile_bot = None
         self.username = username
         self.videos = []
         self.images = []
+        self.tweet_urls = []
         self.save_dir = self.generate_save_dir()
 
     def process(self, limit: int = 10):
@@ -55,30 +65,43 @@ class TwitterScrapper():
             for key in data.keys():
                 self.images.extend(data[key]['images'])
                 self.videos.extend(data[key]['videos'])
+                if len(data[key]['videos']):
+                    self.tweet_urls.append(data[key]['tweet_url'])
         except Exception as exc:
             print(exc)
             pass
-        return {'videos': self.videos, 'images': self.images}
+        self.profile_bot = profile_bot
+        return {'videos': self.videos, 'images': self.images, 'tweet_urls': self.tweet_urls}
 
     def save_videos(self):
-        return self.videos
+        video_urls = self.get_videos_urls()
+        downloader = VideosDownloader(videos=video_urls, save_dir=f"{self.save_dir}/Videos")
+        downloader.process()
+        return True
 
-    async def save_images(self):
+    def save_images(self):
         downloader = ImagesDownloader(
             images=self.images, save_dir=f"{self.save_dir}/Images")
         downloader.process()
         return True
+    
+    def get_videos_urls(self):
+        retriever = TwiterStatusesVideosUrlRetriever(self.profile_bot.get_driver(), self.tweet_urls)
+        results = retriever.process()
+        self.profile_bot.close_driver()
+        return results
 
     def generate_save_dir(self):
         return f'Records/{str(self.username).upper()}-{datetime.now().timestamp()}'
 
 
 if __name__ == '__main__':
-    scrapper = TwitterScrapper(username='Chocolateplayg1')
+    scrapper = TwitterScrapper(username=modelUsername)
 
-    scrapper_data = scrapper.process(limit=5)
+    scrapper_data = scrapper.process(limit=20)
 
     print(scrapper_data)
     print(scrapper.save_dir)
 
     scrapper.save_images()
+    scrapper.save_videos()
